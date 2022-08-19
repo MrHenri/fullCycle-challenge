@@ -127,6 +127,7 @@ func setupDb() *sql.DB {
 }
 
 func accountCreatedResponse(w http.ResponseWriter, account domain.Account) {
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	resp := make(map[string]string)
 	resp["message"] = "Status OK"

@@ -5,11 +5,10 @@ ENV PATH="/go/bin:${PATH}"
 ENV GO111MODULE=on
 ENV CGO_ENABLED=1
 
-COPY init-database.sh go.mod go.sum ./ 
+COPY init_database.sql go.mod go.sum ./ 
 
-RUN apt-get update && \
-    apt install sqlite3 && \
-    chmod +x init-database.sh
+RUN apt-get update && apt-get -y install sqlite3 && apt-get clean
+
 COPY . .
 
-CMD ["sh", "-c", "./init-database.sh ; go build ; ./fullCycle-challenge"]
+CMD ["sh", "-c", "sqlite3 bank.db < init_database.sql ; go build ; ./fullCycle-challenge"]

@@ -15,6 +15,9 @@ import (
 
 func PostTransaction(w http.ResponseWriter, r *http.Request) {
 	transaction := domain.NewTransaction()
+	fromAccount := domain.NewAccount()
+	toAccount := domain.NewAccount()
+
 	if r.Method == http.MethodPost {
 		db := setupDb()
 		dec := json.NewDecoder(r.Body)
@@ -35,27 +38,48 @@ func PostTransaction(w http.ResponseWriter, r *http.Request) {
 
 		repo := repository.NewTransactionRepositoryDb(db)
 
-		fromAccount, err := repo.GetAccount(transaction.From)
+		fromAccountTemp, err := repo.GetAccount(transaction.From)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		toAccount, err := repo.GetAccount(transaction.To)
+		fromAccount.ID = fromAccountTemp.ID
+		fromAccount.Number = fromAccountTemp.Number
+		fromAccount.Balance = fromAccountTemp.Balance
+
+		toAccountTemp, err := repo.GetAccount(transaction.To)
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = repo.SaveTransaction(fromAccount, toAccount, *transaction)
+
+		toAccount.ID = toAccountTemp.ID
+		toAccount.Number = toAccountTemp.Number
+		toAccount.Balance = toAccountTemp.Balance
+
+		err = repo.SaveTransaction(*fromAccount, *toAccount, *transaction)
 
 		if err != nil {
 			msg := err.Error()
 			http.Error(w, msg, http.StatusBadRequest)
 		}
+
+		fromAccountTemp, err = repo.GetAccount(transaction.From)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fromAccount.Balance = fromAccountTemp.Balance
+
+		toAccountTemp, err = repo.GetAccount(transaction.To)
+		if err != nil {
+			log.Fatal(err)
+		}
+		toAccount.Balance = toAccountTemp.Balance
 	} else {
 		msg := "Only POST Method"
 		http.Error(w, msg, http.StatusBadRequest)
 	}
 
-	transactionSavedResponse(w, *transaction)
+	transactionSavedResponse(w, *fromAccount, *toAccount)
 }
 
 func PostAccount(w http.ResponseWriter, r *http.Request) {
@@ -117,14 +141,14 @@ func accountCreatedResponse(w http.ResponseWriter, account domain.Account) {
 	w.Write(jsonResp)
 }
 
-func transactionSavedResponse(w http.ResponseWriter, transaction domain.Transaction) {
+func transactionSavedResponse(w http.ResponseWriter, fromAccount domain.Account, toAccount domain.Account) {
 	w.Header().Set("Content-Type", "application/json")
 	resp := make(map[string]string)
 	resp["message"] = "Status OK"
-	resp["transaction ID"] = transaction.ID
-	resp["transaction From"] = transaction.From
-	resp["transaction To"] = transaction.To
-	resp["transaction Amount"] = strconv.FormatFloat(transaction.Amount, 'f', -1, 64)
+	resp["from Account Number"] = fromAccount.Number
+	resp["from Account Amount"] = strconv.FormatFloat(fromAccount.Balance, 'f', -1, 64)
+	resp["to Account Number"] = toAccount.Number
+	resp["to Account Amount"] = strconv.FormatFloat(toAccount.Balance, 'f', -1, 64)
 
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {

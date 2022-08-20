@@ -8,10 +8,10 @@ import (
 )
 
 func main() {
-	log.Println("Server started on: http://localhost:8080")
+	log.Println("Server started on: http://localhost:8000")
 	http.HandleFunc("/bank-accounts", services.PostAccount)
 	http.HandleFunc("/bank-accounts/transfer", services.PostTransaction)
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
